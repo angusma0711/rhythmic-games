@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const code=fs.readFileSync(__dirname+'/index.html','utf8').split('<script>')[1].split('</script>')[0];new vm.Script(code);
-const els={},cells=Array.from({length:8},()=>{const c={active:false};c.classList={add(){c.active=true},remove(){c.active=false},toggle(name,value){c.active=value}};return c});
+const els={},cells=Array.from({length:8},()=>{const c={active:false};c.classes=new Set();c.marker={attrs:{},setAttribute(name,value){this.attrs[name]=value}};c.querySelector=()=>c.marker;c.classList={add(name){c.classes.add(name);if(name==='active')c.active=true},remove(name){c.classes.delete(name);if(name==='active')c.active=false},toggle(name,value){if(value)c.classes.add(name);else c.classes.delete(name);if(name==='active')c.active=value}};return c});
 function el(id){return els[id]??={value:({source:'builtin',builtinBpm:'80',customBpm:'',offset:'',musicVolume:'45',demoVolume:'65'})[id]??'',selectedIndex:0,disabled:false,hidden:false,textContent:'',innerHTML:'',open:false,files:[],add(){},focus(){}}}
 const nodes=[];function node(){let n={connect(target){return target},start(...args){this.starts=args},stop(){this.stopped=true},frequency:{value:0,setValueAtTime(){},exponentialRampToValueAtTime(){}},gain:{value:0,setValueAtTime(){},exponentialRampToValueAtTime(){}}};nodes.push(n);return n}
 class Audio{constructor(){this.currentTime=10;this.state='running';this.sampleRate=8000;this.destination={}}async resume(){this.state='running'}createGain(){return node()}createOscillator(){return node()}createBufferSource(){return node()}createBiquadFilter(){return node()}createBuffer(n,len,rate){return {getChannelData:()=>new Float32Array(len)}}async decodeAudioData(){if(this.badDecode)throw Error('bad');return {duration:30}}}
@@ -26,5 +26,15 @@ const shape={ta:[[0,1]],ti:[[0,.5],[.5,.5]],eighthSixteenths:[[0,.5],[.5,.25],[.
 exec('P5').forEach(p=>{assert.equal(p.beats,8);assert.equal(p.segments.length,8);assert.equal(p.events.reduce((n,e)=>n+e.durationBeats,0),8);p.segments.forEach(s=>{assert(shape[s.kind]);let actual=p.events.filter(e=>e.startBeat>=s.startBeat&&e.startBeat<s.startBeat+1);assert.equal(actual.length,shape[s.kind].length);actual.forEach((e,i)=>{assert.equal(e.startBeat-s.startBeat,shape[s.kind][i][0]);assert.equal(e.durationBeats,shape[s.kind][i][1]);assert.equal(e.kind,'note')})})});
 exec("$('question').selectedIndex=5;render()");await exec('begin()');assert(exec('run.events.filter(e=>e.type==="demo").every(e=>e.beat>=4&&e.beat<12)'));exec('ctx.currentTime=run.origin+12.5*run.spb;frame()');assert(cells[0].active);exec('ctx.currentTime=run.origin+13*run.spb;frame()');assert(cells[1].active);exec("selectGrade('P2')");assert.equal(exec('run'),null);assert.equal(exec('library().length'),6);
 exec('goHome()');assert.equal(exec('grade'),null);
+// Assistance follows note onsets rather than beat subdivisions, in both passes.
+assert.equal(exec('assistanceCue(P2[1],1.2)'),null);
+assert.equal(exec('assistanceCue(P3[0],1.9).noteIndex'),0);
+assert.equal(exec('assistanceCue(P3[2],1.49).x'),42);assert.equal(exec('assistanceCue(P3[2],1.5).x'),172);
+[0,.25,.5,.75].forEach((b,i)=>assert.equal(exec(`assistanceCue(P5[3],${b}).noteIndex`),i));
+assert.equal(exec('assistanceCue(P5[2],.74).x'),25);assert.equal(exec('assistanceCue(P5[2],.75).x'),82);
+exec("selectGrade('P5');$('assistance').checked=true;$('question').selectedIndex=3;render()");await exec('begin()');
+exec('ctx.currentTime=run.origin+4.5*run.spb;frame()');assert.equal(cells[0].marker.attrs.cx,65);assert(cells[0].classes.has('assisting'));
+exec('ctx.currentTime=run.origin+12.75*run.spb;frame()');assert.equal(cells[0].marker.attrs.cx,90);assert(cells[0].classes.has('assisting'));
+exec("$('assistance').checked=false;frame()");assert(!cells.some(c=>c.classes.has('assisting')));exec('stop()');assert(!cells.some(c=>c.classes.has('assisting')));
 console.log('PASS: grade gate, P2 preservation, P3 half/dotted-pair notation timing and grouping, P5 exam-shape timing, P5 second-pass highlights, grade-switch cleanup;  6 patterns, 8-beat totals, note/rest timing, 750/375ms, count/guided/independent boundaries, continuous accompaniment, custom offset/duration, 8-beat preview, invalid settings, decode failure, settings reset, cancellation race, visibility cleanup.');
 })().catch(e=>{console.error(e);process.exitCode=1});
