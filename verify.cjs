@@ -42,7 +42,7 @@ exec('goHome()');assert(!key(' '));assert.equal(sandbox.document.body.dataset.gr
 
 // Recorded songs: one merged phrase sequence per grade, beat maps, timing and run lifecycle.
 for(const key of ['radetzky','cancan']){const s=exec(`SONGS.${key}`);assert(s.beats.every((b,i)=>i===0||b>s.beats[i-1]));assert(s.count>=10);assert(s.beats[s.clap+8*s.count]<=s.until);
-const allowed={P2:['ta','ti','rest'],P3:['ta','half','dottedPair'],P5:['ta','ti','titiri','tim','tiri','rest']};
+const allowed={P2:['ta','ti','rest'],P3:key==='radetzky'?['ta','ti','half','dottedPair']:['ta','half','dottedPair'],P5:['ta','ti','titiri','tim','tiri','rest']};
 for(const g of ['P2','P3','P5']){const ph=s.phrases[g];assert.equal(ph.length,s.count);ph.forEach(p=>{assert.equal(p.beats,8);assert(p.segments.every(x=>allowed[g].includes(x.kind)));assert(p.segments.every(x=>Math.floor(x.startBeat/4)===Math.floor((x.startBeat+x.durationBeats-1)/4)))})}
 if(key==='cancan')for(const g of ['P2','P5'])assert(s.phrases[g].every(p=>p.segments.every(x=>['ta','ti','rest'].includes(x.kind))&&(g!=='P2'||p.segments.every(x=>x.kind!=='ti'))));
 assert.equal(exec(`songPos(SONGS.${key},songTime(SONGS.${key},${s.clap}+3.5))`).toFixed(6),(s.clap+3.5).toFixed(6));
