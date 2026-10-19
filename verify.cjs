@@ -43,7 +43,7 @@ exec(`ctx.currentTime=run.origin+${20+q*16}*run.spb;frame()`);
 assert.equal(el('question').selectedIndex,q+1);assert.equal(el('status').dataset.phase,'guided');assert.equal(exec('run.origin'),origin);assert(el('start').disabled);assert(cells[0].active);
 assert(exec(`run.events.some(e=>e.beat===${20+q*16}&&e.type==='chord')`));assert(exec(`run.events.some(e=>e.beat===${20+q*16}&&e.type==='demo')`));
 }
-exec('ctx.currentTime=run.origin+run.end*run.spb;frame()');assert.equal(exec('run'),null);assert.equal(el('status').textContent,'全部 6 題完成');
+exec('ctx.currentTime=run.origin+run.end*run.spb;frame()');assert.equal(exec('run'),null);assert.equal(el('status').textContent,'本組 6 個組合完成');
 exec("$('question').selectedIndex=0");await exec('begin()');exec('ctx.currentTime=run.origin+20*run.spb;frame()');exec('stop()');assert.equal(exec('run'),null);assert.equal(exec('voices.size'),0);
 }
 assert(code.includes('function assistanceCue'));assert(!fs.readFileSync(__dirname+'/index.html','utf8').includes('id="upcoming"'));
@@ -51,5 +51,15 @@ exec("selectGrade('P5');$('assistance').checked=true");await exec('begin()');exe
 // One uninterrupted custom buffer covers all exercises without gaps.
 exec("selectGrade('P2');$('source').value='custom';$('customBpm').value='80';$('offset').value='2';audioBuffer={duration:73}");await exec('begin()');assert.equal(exec('run'),null);assert(el('message').textContent.includes('96'));
 exec('audioBuffer={duration:120}');await exec('begin()');const sequenceBuffer=nodes.findLast(n=>n.buffer&&n.buffer.duration===120);assert.deepEqual(sequenceBuffer.starts,[exec('run.origin+4*run.spb'),2,72]);const before=sequenceBuffer.starts;exec('ctx.currentTime=run.origin+20*run.spb;frame()');assert.strictEqual(sequenceBuffer.starts,before);assert(!sequenceBuffer.stopped);exec('stop()');assert(sequenceBuffer.stopped);
+// Three named banks per grade, six unique eight-beat combinations per bank.
+for(const g of ['P2','P3','P5'])for(let b=0;b<3;b++){
+exec(`selectGrade('${g}');selectBank(${b})`);const patterns=exec('library()');assert.equal(patterns.length,6);assert.equal(new Set(patterns.map(p=>p.cells.join(','))).size,6);
+for(const p of patterns){assert.equal(p.beats,8);assert.equal(p.events.reduce((n,e)=>n+e.durationBeats,0),8);p.segments.forEach(seg=>assert(seg.startBeat%4+seg.durationBeats<=4));assert(p.cells.every(k=>({P2:['ta','ti','rest'],P3:['ta','half','dottedPair'],P5:['ta','ti','titiri','tim','tiri']})[g].includes(k)))}
+exec("$('source').value='builtin'");await exec('begin()');assert(el('bank').disabled);assert.equal(exec('run.end'),100);assert.equal(exec('run.events.filter(e=>e.type==="cue").length'),4);assert.equal(exec('run.events.filter(e=>e.type==="melody").length'),b?48:0);
+for(let q=1;q<6;q++){exec(`ctx.currentTime=run.origin+${4+16*q}*run.spb;frame()`);assert.equal(el('question').selectedIndex,q);assert.equal(el('status').dataset.phase,'guided')}
+exec('ctx.currentTime=run.origin+run.end*run.spb;frame()');assert.equal(exec('run'),null);assert.equal(exec('bank'),b);
+await exec('begin()');exec(`selectBank(${(b+1)%3})`);assert.equal(exec('run'),null);assert.equal(exec('voices.size'),0);assert.equal(el('question').selectedIndex,0);
+}
+assert.equal(exec('new Set(MUSIC.map(m=>m.chords.flat().join(","))).size'),3);assert.notEqual(exec('MUSIC[1].melody.join()'),exec('MUSIC[2].melody.join()'));
 console.log('PASS: note engraving (shared metrics, no NaN, hollow half note), assistance light retained, no upcoming preview, gap-free automatic questions, calm completion, question dots, grade colour, beat numbers, syllable toggle, grade grooves (P2 8th / P3 quarter / P5 16th hats), held demo for long notes, P5 bank (5 units, onsets), latency clamp and visual delay, phase banner, keyboard/clicker keys, projector toggle, grade gate, P2 preservation, P3 half/dotted-pair notation timing and grouping, P5 grade entry, grade-switch cleanup;  6 patterns, 8-beat totals, note/rest timing, 750/375ms, count/guided/independent boundaries, continuous accompaniment, custom offset/duration, 8-beat preview, invalid settings, decode failure, settings reset, cancellation race, visibility cleanup.');
 })().catch(e=>{console.error(e);process.exitCode=1});
