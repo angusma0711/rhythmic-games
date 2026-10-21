@@ -8,7 +8,7 @@ const handlers={};const sandbox={document:{getElementById:el,querySelector:()=>e
 (async()=>{
 assert.equal(exec('grade'),null);await exec('begin()');assert.equal(exec('run'),null);exec("selectGrade('P2')");
 
-const expected=[["ta","ta","ta","ta","ta","ta","ta","ta"],["half","half","half","half"],["ta","ti","ta","ti","ta","ti","ta","ti"],["ti","ta","ti","ta","ti","ta","ti","ta"],["ta","ti","half","ta","ti","half"],["ti","ta","half","ta","half","ti"]];
+const expected=[["ta","ta","ta","ta","ta","ta","ta","ta"],["half","half","half","half"],["ta","ti","ta","ti","ta","ti","ta","ti"],["ti","ta","ti","ta","ti","ta","ti","ta"],["ta","ti","half","ta","ti","half"],["ti","ta","half","half","ta","ti"]];
 assert.equal(exec('PATTERNS.length'),6);exec('PATTERNS').forEach((p,i)=>{assert.deepEqual(Array.from(p.cells),expected[i]);assert.equal(p.beats,8);assert.equal(p.events.reduce((n,e)=>n+e.durationBeats,0),8);p.events.forEach(e=>assert(e.startBeat>=0&&e.startBeat<8));});
 assert.equal(exec('60/80'),.75);assert.equal(exec('.5*60/80'),.375);
 const ev=exec('timeline(PATTERNS[2],.75)');assert.equal(ev.filter(e=>e.type==='cue').length,4);assert(ev.filter(e=>e.type==='demo').every(e=>e.beat>=4&&e.beat<12));assert(ev.some(e=>e.type==='chord'&&e.beat===12));assert(ev.some(e=>e.type==='hat'&&e.beat===19.5));assert.equal(exec("phase(11.999)"),'guided');assert.equal(exec('phase(12)'),'independent');assert.equal(exec('phase(20)'),'done');
@@ -66,5 +66,8 @@ for(let b=0;b<3;b++){
 exec(`selectGrade('P2');selectBank(${b})`);for(const p of exec('library()')){assert(p.events.every(e=>e.kind==='note'));for(const seg of p.segments.filter(s=>s.kind==='half')){const notes=p.events.filter(e=>e.startBeat>=seg.startBeat&&e.startBeat<seg.startBeat+2);assert.equal(notes.length,1);assert.equal(notes[0].durationBeats,2);assert(seg.startBeat%4+2<=4)}}
 }
 exec("selectGrade('P2');$('question').selectedIndex=1;render()");assert(el('score').innerHTML.includes('1–2'));assert(el('score').innerHTML.includes('fill-rule="evenodd"'));assert.equal(exec('assistanceCue(P2[1],1.9).segmentIndex'),0);
+for(const banks of Object.values(exec('BANKS')))for(const rows of banks)for(const p of rows){assert.equal(p.beats,8);p.segments.forEach(s=>{assert(s.startBeat%4+s.durationBeats<=4);if(s.durationBeats===2)assert.equal(s.startBeat%2,0)})}
+assert.throws(()=>exec("validateMeter(makePattern(['ta','half','ta','half','half'],1))"),/第1或第3拍/);
+assert.throws(()=>exec("validateMeter(makePattern(['ta','dottedPair','ta','half','half'],1))"),/第1或第3拍/);
 console.log('PASS: note engraving (shared metrics, no NaN, hollow half note), assistance light retained, no upcoming preview, gap-free automatic questions, calm completion, question dots, grade colour, beat numbers, syllable toggle, grade grooves (P2 8th / P3 quarter / P5 16th hats), held demo for long notes, P5 bank (5 units, onsets), latency clamp and visual delay, phase banner, keyboard/clicker keys, projector toggle, grade gate, P2 preservation, P3 half/dotted-pair notation timing and grouping, P5 grade entry, grade-switch cleanup;  6 patterns, 8-beat totals, note/rest timing, 750/375ms, count/guided/independent boundaries, continuous accompaniment, custom offset/duration, 8-beat preview, invalid settings, decode failure, settings reset, cancellation race, visibility cleanup.');
 })().catch(e=>{console.error(e);process.exitCode=1});
