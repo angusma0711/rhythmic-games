@@ -86,19 +86,17 @@ body.projector .game-mark{display:none}
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
-const PATTERNS=[['ta','ta','ta','ta','ta','ta','ta','ta'],['ta','rest','ta','rest','ta','rest','ta','rest'],['ta','ti','ta','ti','ta','ti','ta','ti'],['ti','ta','ti','ta','ti','ta','ti','ta'],['ta','ti','ta','rest','ta','ti','ta','rest'],['ti','ta','rest','ti','ta','rest','ti','ta']].map((cells,i)=>({id:i+1,cells,beats:8,events:cells.flatMap((kind,b)=>kind==='ti'?[{startBeat:b,durationBeats:.5,kind:'note'},{startBeat:b+.5,durationBeats:.5,kind:'note'}]:[{startBeat:b,durationBeats:1,kind:kind==='rest'?'rest':'note'}])}));
+const P2_CELLS=[["ta","ta","ta","ta","ta","ta","ta","ta"],["half","half","half","half"],["ta","ti","ta","ti","ta","ti","ta","ti"],["ti","ta","ti","ta","ti","ta","ti","ta"],["ta","ti","half","ta","ti","half"],["ti","ta","half","ta","half","ti"]];
 function makePattern(cells,id){let offset=0;const segments=cells.map(kind=>{const span=kind==='half'||kind==='dottedPair'?2:1,segment={kind,startBeat:offset,durationBeats:span};offset+=span;return segment});return {id,cells,beats:offset,segments,events:segments.flatMap(s=>{const on=ONSETS[s.kind];return on?on.map((o,i)=>({startBeat:s.startBeat+o,durationBeats:(on[i+1]??s.durationBeats)-o,kind:'note'})):[{startBeat:s.startBeat,durationBeats:s.durationBeats,kind:s.kind==='rest'?'rest':'note'}]})}}
 const ONSETS={ti:[0,.5],dottedPair:[0,1.5],titiri:[0,.5,.75],tim:[0,.75],tiri:[0,.25,.5,.75]};
-const P2=PATTERNS.map(p=>makePattern(p.cells,p.id));
+const P2=P2_CELLS.map((cells,i)=>makePattern(cells,i+1));const PATTERNS=P2;
 const P3=[['half','half','half','half'],['ta','ta','half','ta','ta','half'],['dottedPair','half','dottedPair','half'],['ta','ta','dottedPair','half','ta','ta'],['half','dottedPair','ta','ta','dottedPair'],['dottedPair','dottedPair','half','dottedPair']].map((cells,i)=>makePattern(cells,i+1));
 const P5=[['ta','ti','ta','ti','ta','ti','ta','ti'],['titiri','ta','titiri','ta','titiri','ta','titiri','ta'],['tim','ta','tim','ta','tim','ta','tim','ta'],['tiri','ta','tiri','ta','tiri','ta','tiri','ta'],['titiri','ti','tim','ta','titiri','ti','tim','ta'],['titiri','tiri','tim','ti','ta','tim','tiri','ta']].map((cells,i)=>makePattern(cells,i+1));
 const GRADES={P2:{label:'P2 · 小二',patterns:P2},P3:{label:'P3 · 小三',patterns:P3},P5:{label:'P5 · 小五',patterns:P5}};let grade=null;
 
 const BANK_NAMES=['基礎節奏','律動練習','節奏挑戰'];let bank=0;
 const EXTRA={
-P2:[
-[['ta','ti','rest','ta','ti','ta','ta','rest'],['ti','ta','ti','rest','ta','ti','rest','ta'],['ta','rest','ti','ta','ti','ti','ta','rest'],['ti','ti','rest','ta','ta','rest','ti','ta'],['rest','ta','ti','ti','ta','ti','ta','rest'],['ti','rest','ta','ti','ti','ta','rest','ta']],
-[['ti','ta','rest','ti','ta','ti','ti','rest'],['ta','ti','ti','rest','ti','rest','ta','ta'],['rest','ti','ta','ti','ta','rest','ti','ta'],['ti','ti','ta','rest','rest','ta','ti','ta'],['ta','rest','ti','ti','ti','ta','rest','ti'],['ti','ta','ti','rest','ta','ti','rest','ti']]],
+P2:[[["ta","ti","half","ti","ta","half"],["ti","ta","half","half","ti","ta"],["ta","half","ti","ti","half","ta"],["ti","ti","half","ta","half","ti"],["half","ti","ta","ta","ti","half"],["ti","half","ta","half","ta","ti"]],[["ti","ta","half","ti","half","ta"],["ta","ti","half","half","ti","ti"],["half","ta","ti","ta","half","ti"],["ti","half","ti","half","ti","ta"],["ta","half","ti","ti","ta","half"],["half","ti","ti","ta","half","ta"]]],
 P3:[
 [['ta','half','ta','half','ta','ta'],['dottedPair','ta','ta','ta','ta','half'],['ta','ta','half','dottedPair','ta','ta'],['half','ta','ta','dottedPair','half'],['ta','ta','dottedPair','dottedPair','ta','ta'],['dottedPair','half','half','dottedPair']],
 [['ta','half','ta','ta','dottedPair','ta'],['dottedPair','ta','ta','half','dottedPair'],['half','dottedPair','dottedPair','half'],['ta','dottedPair','ta','dottedPair','ta','ta'],['dottedPair','dottedPair','ta','half','ta'],['ta','dottedPair','ta','ta','dottedPair','ta']]],
